@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePoseGesture } from "@/hooks/usePoseGesture";
+import { WelcomeScene } from "@/components/welcome/WelcomeScene";
 
 type GameStatus = "ready" | "playing" | "crashed";
 type GestureLabel = "IDLE" | "JUMP" | "DUCK";
 type CameraState = "idle" | "ready" | "denied" | "unsupported";
-type Scene = "prepare" | "game";
+type Scene = "welcome" | "prepare" | "game";
 
 type ObstacleKind = "cactus" | "bird";
 
@@ -226,7 +227,7 @@ export function MotionDinoGame() {
   });
 
   const [status, setStatus] = useState<GameStatus>("ready");
-  const [scene, setScene] = useState<Scene>("prepare");
+  const [scene, setScene] = useState<Scene>("welcome");
   const [gesture, setGesture] = useState<GestureLabel>("IDLE");
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
@@ -235,7 +236,7 @@ export function MotionDinoGame() {
   const [damageHint, setDamageHint] = useState<string | null>(null);
   const [cameraState, setCameraState] = useState<CameraState>("idle");
   const pose = usePoseGesture({
-    enabled: cameraState === "ready" && (scene === "prepare" || status === "playing"),
+    enabled: cameraState === "ready" && (scene === "welcome" || scene === "prepare" || status === "playing"),
     videoRef,
   });
 
@@ -279,7 +280,7 @@ export function MotionDinoGame() {
       duckPressed: false,
       poseDuckActive: false,
     };
-    setScene("prepare");
+    setScene("welcome");
     setStatus("ready");
     setScore(0);
     setHealth(MAX_HEALTH);
@@ -754,7 +755,7 @@ export function MotionDinoGame() {
   }, [canStartAdventure, enterGame, scene, status]);
 
   useEffect(() => {
-    const shouldKeepCameraOn = scene === "prepare" || status === "playing";
+    const shouldKeepCameraOn = scene === "welcome" || scene === "prepare" || status === "playing";
     if (!shouldKeepCameraOn || cameraState === "ready" || streamRef.current) {
       return;
     }
@@ -957,7 +958,15 @@ export function MotionDinoGame() {
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#8EDBFF_0%,#E8FFF5_45%,#FFF6CE_100%)] px-4 py-4 md:px-8 md:py-6">
       <div className={scene === "prepare" ? "mx-auto w-full max-w-6xl" : "mx-auto w-full"}>
-        {scene === "prepare" ? (
+        {scene === "welcome" ? (
+          <WelcomeScene
+            pose={pose}
+            videoRef={videoRef}
+            cameraState={cameraState}
+            onComplete={() => { setScene("game"); resetGame(); }}
+            onSkip={() => { setScene("prepare"); }}
+          />
+        ) : scene === "prepare" ? (
           <div className="flex min-h-[calc(100vh-2rem)] items-center">
             <div className="w-full rounded-[34px] border-4 border-white/90 bg-white/75 p-5 shadow-2xl backdrop-blur md:p-8">
               <div className="text-center">

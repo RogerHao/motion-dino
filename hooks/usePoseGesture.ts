@@ -226,13 +226,14 @@ function estimateGesture(landmarks: NormalizedLandmark[], runtime: GestureRuntim
   return runtime.stableGesture;
 }
 
-export function usePoseGesture({ enabled, videoRef }: UsePoseGestureOptions): UsePoseGestureState {
+export function usePoseGesture({ enabled, videoRef }: UsePoseGestureOptions): UsePoseGestureState & { landmarksRef: React.RefObject<NormalizedLandmark[] | null> } {
   const [state, setState] = useState<UsePoseGestureState>(INITIAL_STATE);
   const stateRef = useRef<UsePoseGestureState>(INITIAL_STATE);
   const landmarkerRef = useRef<PoseLandmarker | null>(null);
   const initPromiseRef = useRef<Promise<PoseLandmarker> | null>(null);
   const rafRef = useRef<number | null>(null);
   const runtimeRef = useRef<GestureRuntime>(createRuntime());
+  const landmarksRef = useRef<NormalizedLandmark[] | null>(null);
 
   const publish = (partial: Partial<UsePoseGestureState>) => {
     const current = stateRef.current;
@@ -343,6 +344,7 @@ export function usePoseGesture({ enabled, videoRef }: UsePoseGestureOptions): Us
         const landmarks = result.landmarks[0];
 
         if (!landmarks || landmarks.length < 13) {
+          landmarksRef.current = null;
           runtime.missingFrames += 1;
           if (runtime.missingFrames > MAX_MISSING_FRAMES) {
             publish({
@@ -359,6 +361,7 @@ export function usePoseGesture({ enabled, videoRef }: UsePoseGestureOptions): Us
           return;
         }
 
+        landmarksRef.current = landmarks;
         const gesture = estimateGesture(landmarks, runtime, now);
         if (runtime.missingFrames > MAX_MISSING_FRAMES) {
           publish({
@@ -425,5 +428,5 @@ export function usePoseGesture({ enabled, videoRef }: UsePoseGestureOptions): Us
     };
   }, []);
 
-  return state;
+  return { ...state, landmarksRef };
 }
